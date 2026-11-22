@@ -668,6 +668,8 @@ function renderAllTimesGrid() {
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
+  let firstUpcomingElement = null;
+
   times.forEach(t => {
     const [h, m] = t.split(':').map(Number);
     const timeMinutes = h * 60 + m;
@@ -686,7 +688,24 @@ function renderAllTimesGrid() {
     div.className = cls;
     div.textContent = t;
     grid.appendChild(div);
+
+    // İlk gelecek seferi (veya tam şu an olan seferi) işaretle
+    if (viewingToday && !firstUpcomingElement && timeMinutes >= currentMinutes) {
+      firstUpcomingElement = div;
+    }
   });
+
+  // Scroll container'ı bul ve ilk gelecek seferin satırına kaydır
+  if (firstUpcomingElement) {
+    const scrollContainer = grid.parentElement; // .scroll-left-container
+    // requestAnimationFrame ile DOM'un çizilmesini bekle, sonra kaydır
+    requestAnimationFrame(() => {
+      const gridTop = grid.getBoundingClientRect().top;
+      const elementTop = firstUpcomingElement.getBoundingClientRect().top;
+      const offset = elementTop - gridTop;
+      scrollContainer.scrollTop = offset;
+    });
+  }
 }
 
 function updateLiveTimes() {
