@@ -40,8 +40,30 @@
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
-    .custom-scroll::-webkit-scrollbar {
-      display: none;
+    /* Left-side sleek visible scrollbar */
+    .scroll-left-container {
+      direction: rtl; /* Puts scrollbar on the LEFT side */
+      overflow-y: scroll; /* Always visible track */
+      scrollbar-width: thin;
+      scrollbar-color: #22c55e #0f172a;
+    }
+    .scroll-left-container > * {
+      direction: ltr; /* Keeps grid items aligned left-to-right */
+    }
+    .scroll-left-container::-webkit-scrollbar {
+      width: 5px;
+    }
+    .scroll-left-container::-webkit-scrollbar-track {
+      background: #020617;
+      border-radius: 9999px;
+      margin: 4px 0;
+    }
+    .scroll-left-container::-webkit-scrollbar-thumb {
+      background: #22c55e;
+      border-radius: 9999px;
+    }
+    .scroll-left-container::-webkit-scrollbar-thumb:hover {
+      background: #16a34a;
     }
   </style>
 </head>
@@ -219,12 +241,16 @@
           <span>🕒 Tüm Sefer Saatleri</span>
           <span id="total-count-badge" class="text-[10px] font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">0 sefer</span>
         </h3>
-        <span class="text-[11px] text-slate-500 font-mono">Aktif hat & yön</span>
+        <span class="text-[10px] text-emerald-400/90 font-medium flex items-center gap-1 bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-800/40">
+          <span>↕ Kaydırılabilir</span>
+        </span>
       </div>
 
-      <!-- Time Pills Grid -->
-      <div id="all-times-grid" class="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1 custom-scroll">
-        <!-- Rendered by JS -->
+      <!-- Time Pills Grid with Left-Side Visible Scrollbar -->
+      <div class="scroll-left-container max-h-56 pl-2 pr-0.5">
+        <div id="all-times-grid" class="grid grid-cols-4 gap-2">
+          <!-- Rendered by JS -->
+        </div>
       </div>
     </div>
 
