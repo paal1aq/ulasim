@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Çanakkale Ulaşım - Otobüs Saatleri & Canlı Takip</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d'
+            }
+          },
+          animation: {
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Prevent pull-to-refresh on mobile if not desired */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased pb-12">
+
+  <!-- Top Status & Watchdog Bar -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-4 py-3">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <span class="text-base font-bold text-slate-950">17</span>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
+            Çanakkale Ulaşım
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          </h1>
+          <p id="live-clock" class="text-xs text-slate-400 font-mono">--:--:--</p>
+        </div>
+      </div>
+      <!-- Watchdog Pill -->
+      <div class="text-right">
+        <span id="tariff-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800/60">
+          ✓ 23 Kasım Tarifesi
+        </span>
+        <p id="tariff-subtext" class="text-[10px] text-slate-400 mt-0.5">Yürürlük Tarihi</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-md mx-auto w-full px-4 pt-4 flex-1 flex flex-col space-y-4">
+
+    <!-- Day Mode Selector (Hafta İçi / Hafta Sonu) -->
+    <div class="bg-slate-900 p-1 rounded-2xl border border-slate-800 flex items-center">
+      <button id="btn-mode-weekday" onclick="setDayMode('weekday')" class="flex-1 py-2 text-xs font-semibold rounded-xl transition-all duration-200 text-center flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-md">
+        <span>📅 Hafta İçi</span>
+        <span id="badge-today-weekday" class="hidden text-[9px] bg-white/20 px-1.5 py-0.2 rounded font-normal">Bugün</span>
+      </button>
+      <button id="btn-mode-weekend" onclick="setDayMode('weekend')" class="flex-1 py-2 text-xs font-semibold rounded-xl transition-all duration-200 text-center flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200">
+        <span>🏖️ Hafta Sonu</span>
+        <span id="badge-today-weekend" class="hidden text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded font-normal">Bugün</span>
+      </button>
+    </div>
+
+    <!-- Favorite Lines Switcher (Hızlı Erişim Hapları) -->
+    <div>
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Favori Hatlar</span>
+        <span id="line-status-note" class="text-[11px] text-slate-500"></span>
+      </div>
+      <div class="grid grid-cols-3 gap-2" id="line-pills">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Direction / Terminal Switcher (İki Başlangıç Durağı) -->
+    <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Kalkış Durağı & Yön</span>
+        <button onclick="toggleDirection()" class="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium active:scale-95 transition-transform">
+          <span>Yön Değiştir</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Direction Tabs -->
+      <div class="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800/80" id="direction-tabs">
+        <!-- Rendered by JS -->
+      </div>
+      <p id="direction-subtitle" class="text-[11px] text-slate-400 text-center mt-2 font-medium"></p>
+    </div>
+
+    <!-- ZAMAN TÜNELİ: 3-Tier Live Timeline (Önceki - Sıradaki - Sonraki) -->
+    <div class="bg-gradient-to-b from-slate-900 to-slate-900/90 rounded-3xl p-4 border border-slate-800 shadow-xl relative overflow-hidden">
+      <!-- Glow effect -->
+      <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+      <div class="flex items-center justify-between mb-3 border-b border-slate-800/60 pb-2">
+        <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          Canlı Sefer Durumu
+        </span>
+        <span id="active-line-badge" class="text-xs font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+          Ç-10
+        </span>
+      </div>
+
+      <!-- Timeline Content Container -->
+      <div id="live-timeline-active" class="space-y-3">
+        <!-- 1. Önceki Sefer -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/50 text-slate-400">
+          <div class="flex items-center space-x-2">
+            <span class="text-slate-500 text-xs font-mono">⏪</span>
+            <div>
+              <p class="text-[11px] font-medium text-slate-500">Önceki Sefer</p>
+              <p id="prev-time" class="text-sm font-semibold font-mono text-slate-400">--:--</p>
+            </div>
+          </div>
+          <span id="prev-diff" class="text-xs text-slate-500 font-medium">--</span>
+        </div>
+
+        <!-- 2. SIRADAKİ SEFER (Vurgulu Canlı Kart) -->
+        <div id="current-card" class="p-4 rounded-2xl bg-gradient-to-tr from-emerald-950/40 via-slate-900 to-emerald-900/20 border-2 border-emerald-500/40 relative shadow-lg shadow-emerald-950/30">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                  <span>📍 SIRADAKİ SEFER</span>
+                </span>
+                <span id="now-departing-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-slate-950 animate-bounce">
+                  ŞİMDİ KALKIYOR! 🚍
+                </span>
+              </div>
+              <h2 id="current-time" class="text-4xl font-black font-mono text-white tracking-tight mt-1">--:--</h2>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block mb-0.5">Kalan Süre</span>
+              <div id="current-countdown" class="text-xl font-bold font-mono text-emerald-400">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Sonraki Sefer -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/50 text-slate-300">
+          <div class="flex items-center space-x-2">
+            <span class="text-slate-400 text-xs font-mono">⏩</span>
+            <div>
+              <p class="text-[11px] font-medium text-slate-400">Sonraki Sefer</p>
+              <p id="next-time" class="text-sm font-semibold font-mono text-slate-200">--:--</p>
+            </div>
+          </div>
+          <span id="next-diff" class="text-xs text-emerald-400/90 font-medium font-mono">--</span>
+        </div>
+      </div>
+
+      <!-- Preview Mode Warning (Shown when viewing non-active day mode) -->
+      <div id="live-timeline-preview" class="hidden p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/10 text-amber-400 text-base mb-0.5">
+          ℹ️
+        </div>
+        <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider">Tarife Önizleme Modu</h4>
+        <p class="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
+          Bugün <strong id="preview-current-day-name" class="text-amber-300">Pazar</strong> olduğu için bu tarifede canlı geri sayım yapılmamaktadır.
+        </p>
+        <div class="pt-1">
+          <span class="inline-block px-3 py-1 rounded-xl bg-slate-950 text-amber-400 text-[11px] font-medium border border-amber-500/20">
+            Aşağıdaki tablodan tüm sefer saatlerini görebilirsiniz 👇
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tüm Günün Sefer Saatleri Tablosu / Listesi -->
+    <div class="bg-slate-900 rounded-2xl p-4 border border-slate-800 flex-1">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <span>🕒 Tüm Sefer Saatleri</span>
+          <span id="total-count-badge" class="text-[10px] font-normal text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">0 sefer</span>
+        </h3>
+        <span class="text-[11px] text-slate-500 font-mono">Aktif hat & yön</span>
+      </div>
+
+      <!-- Time Pills Grid -->
+      <div id="all-times-grid" class="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1 custom-scroll">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Fail-Safe & Resmi PDF Açma Butonları -->
+    <div class="pt-2">
+      <button onclick="openPdfModal()" class="w-full py-3 px-4 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700/80 text-xs font-semibold flex items-center justify-center gap-2 transition-colors active:scale-[0.99] shadow-sm">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <span>📄 Orijinal Resmi Belediye PDF'ini Aç</span>
+      </button>
+      <p class="text-[10px] text-slate-500 text-center mt-2">
+        Şüpheye düştüğün her an tek tıkla resmi tarifeyi görüntüleyebilirsin.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- PDF Modal (Fail-Safe Viewer) -->
+  <div id="pdf-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+        <div>
+          <h4 id="pdf-modal-title" class="text-sm font-bold text-white">Resmi Belediye Tarifesi</h4>
+          <p id="pdf-modal-sub" class="text-xs text-slate-400">Çanakkale Belediyesi Ulaşım Hizmetleri</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a id="pdf-download-link" href="#" target="_blank" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-xl transition-colors">
+            Yeni Sekmede Aç
+          </a>
+          <button onclick="closePdfModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+            ✕
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 bg-slate-950 relative">
+        <iframe id="pdf-iframe" class="w-full h-full border-none" src=""></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

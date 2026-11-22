@@ -1,0 +1,8 @@
+node_modules/
+*.log
+page.html
+extract.js
+test_c8.js
+parse-test.js
+extracted_text.txt
+extracted_text_weekend.txt

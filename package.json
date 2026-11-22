@@ -1,0 +1,12 @@
+{
+  "name": "canakkale-otobus-takip",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Çanakkale Otobüs Saatleri Takip ve Değişiklik Bildirici",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "pdf-parse": "^2.4.5"
+  }
+}
