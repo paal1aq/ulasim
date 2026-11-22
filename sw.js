@@ -1,10 +1,13 @@
-const CACHE_NAME = 'canakkale-ulasim-v1';
+const CACHE_NAME = 'canakkale-ulasim-v2';
 const ASSETS = [
   './',
   './index.html',
   './app.js',
   './schedule.json',
   './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './icon.svg',
   './hafta-ici.pdf',
   './hafta-sonu.pdf'
 ];

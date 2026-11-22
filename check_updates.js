@@ -14,6 +14,18 @@ function fetchHtml(url) {
   });
 }
 
+function downloadFile(url, dest) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    https.get(url, (res) => {
+      res.pipe(file);
+      file.on('finish', () => file.close(resolve));
+    }).on('error', (err) => {
+      fs.unlink(dest, () => reject(err));
+    });
+  });
+}
+
 async function check() {
   console.log(`[${new Date().toLocaleString('tr-TR')}] Çanakkale Belediyesi Ulaşım sayfası taranıyor...`);
   try {
@@ -41,19 +53,34 @@ async function check() {
     const oldWeekend = schedule.metadata?.pdfWeekendUrl;
 
     let hasChange = false;
+
     if (weekdayLink && weekdayLink !== oldWeekday) {
-      console.log(`🚨 DEĞİŞİKLİK TESPİT EDİLDİ! Yeni Hafta İçi PDF: ${weekdayLink}`);
-      hasChange = true;
-    }
-    if (weekendLink && weekendLink !== oldWeekend) {
-      console.log(`🚨 DEĞİŞİKLİK TESPİT EDİLDİ! Yeni Hafta Sonu PDF: ${weekendLink}`);
+      console.log(`🚨 DEĞİŞİKLİK TESPİT EDİLDİ! Yeni Hafta İçi PDF indiriliyor: ${weekdayLink}`);
+      await downloadFile(weekdayLink, 'hafta-ici.pdf');
       hasChange = true;
     }
 
-    if (!hasChange) {
-      console.log("✅ Saatlerde herhangi bir değişiklik yok. Mevcut tarife geçerli.");
+    if (weekendLink && weekendLink !== oldWeekend) {
+      console.log(`🚨 DEĞİŞİKLİK TESPİT EDİLDİ! Yeni Hafta Sonu PDF indiriliyor: ${weekendLink}`);
+      await downloadFile(weekendLink, 'hafta-sonu.pdf');
+      hasChange = true;
+    }
+
+    if (hasChange) {
+      console.log("🔄 Yeni PDF'ler işleniyor (build_schedule.js çalıştırılıyor)...");
+      execSync('node build_schedule.js', { stdio: 'inherit' });
+
+      // Embed into app.js
+      const updatedSchedule = fs.readFileSync('schedule.json', 'utf8');
+      let appJs = fs.readFileSync('app.js', 'utf8');
+      appJs = appJs.replace(
+        /const EMBEDDED_SCHEDULE = \{[\s\S]*?\};\s*let scheduleData = EMBEDDED_SCHEDULE;/,
+        'const EMBEDDED_SCHEDULE = ' + updatedSchedule + ';\nlet scheduleData = EMBEDDED_SCHEDULE;'
+      );
+      fs.writeFileSync('app.js', appJs, 'utf8');
+      console.log("✅ Saatler başarıyla güncellendi ve app.js içine işlendi!");
     } else {
-      console.log("🔄 Yeni PDF'ler indirilip saatler yeniden işlenebilir.");
+      console.log("✅ Saatlerde herhangi bir değişiklik yok. Mevcut tarife geçerli.");
     }
   } catch (err) {
     console.error("Hata:", err.message);

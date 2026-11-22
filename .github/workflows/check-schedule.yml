@@ -2,9 +2,12 @@ name: Çanakkale Otobüs Saatleri Günlük Takip
 
 on:
   schedule:
-    # Her gün sabah 06:00 ve 12:00'de (UTC) çalıştır
-    - cron: '0 3,9 * * *'
-  workflow_dispatch: # Manuel tetikleme butonu
+    # Günde 4 kez: Sabah 05:00, 11:00, 17:00, 22:00 (Türkiye saatiyle / UTC 02:00, 08:00, 14:00, 19:00)
+    - cron: '0 2,8,14,19 * * *'
+  workflow_dispatch: # GitHub web arayüzünden manuel "Run workflow" butonu
+
+permissions:
+  contents: write
 
 jobs:
   check-and-update:
@@ -21,12 +24,12 @@ jobs:
       - name: Bağımlılıkları Kur
         run: npm install
 
-      - name: Belediye Sitesini Kontrol Et ve Güncelle
+      - name: Belediye Sitesini Kontrol Et ve Saatleri Güncelle
         run: node check_updates.js
 
       - name: Değişiklik Varsa Kaydet ve Yayınla
         run: |
-          git config --global user.name 'Otobus-Bot'
-          git config --global user.email 'bot@canakkale-ulasim.local'
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add -A
-          git diff --quiet && git diff --staged --quiet || (git commit -m "🚨 Otomatik Güncelleme: Yeni Sefer Saatleri Eklendi" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🚨 Otomatik Güncelleme: Yeni Belediye Sefer Saatleri Eklendi [skip ci]" && git push)

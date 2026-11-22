@@ -8,6 +8,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="Çanakkale Otobüs">
+  <meta name="application-name" content="Çanakkale Otobüs">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -46,10 +50,8 @@
   <!-- Top Status & Watchdog Bar -->
   <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-4 py-3">
     <div class="max-w-md mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <span class="text-base font-bold text-slate-950">17</span>
-        </div>
+      <div class="flex items-center space-x-2.5">
+        <img src="icon-192.png" alt="Çanakkale Ulaşım" class="w-8 h-8 rounded-xl shadow-lg border border-emerald-500/30 object-cover">
         <div>
           <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
             Çanakkale Ulaşım
@@ -70,6 +72,23 @@
 
   <!-- Main Container -->
   <main class="max-w-md mx-auto w-full px-4 pt-4 flex-1 flex flex-col space-y-4">
+
+    <!-- PWA Install Card (Shown when browser supports standalone install) -->
+    <div id="pwa-install-banner" class="hidden bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 border border-emerald-500/40 rounded-2xl p-3 flex items-center justify-between shadow-lg">
+      <div class="flex items-center gap-2.5">
+        <img src="icon-192.png" class="w-10 h-10 rounded-xl shadow-md border border-emerald-500/30" alt="Otobüs">
+        <div>
+          <p class="text-xs font-bold text-white flex items-center gap-1">
+            Uygulamayı Telefona Yükle
+            <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1 rounded">PWA</span>
+          </p>
+          <p class="text-[10px] text-slate-400">Tarayıcı olmadan tam ekran açılır</p>
+        </div>
+      </div>
+      <button onclick="installPwaApp()" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md active:scale-95 transition-all">
+        Yükle
+      </button>
+    </div>
 
     <!-- Day Mode Selector (Hafta İçi / Hafta Sonu) -->
     <div class="bg-slate-900 p-1 rounded-2xl border border-slate-800 flex items-center">
@@ -248,5 +267,41 @@
   </div>
 
   <script src="app.js"></script>
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('PWA ServiceWorker kayıt edildi:', reg.scope))
+          .catch(err => console.warn('PWA ServiceWorker hatası:', err));
+      });
+    }
+
+    // PWA Install Prompt Capture
+    let deferredPrompt;
+    const installBanner = document.getElementById('pwa-install-banner');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installBanner) installBanner.classList.remove('hidden');
+    });
+
+    function installPwaApp() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          if (installBanner) installBanner.classList.add('hidden');
+        }
+        deferredPrompt = null;
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      if (installBanner) installBanner.classList.add('hidden');
+      console.log('PWA Başarıyla Yüklendi!');
+    });
+  </script>
 </body>
 </html>
