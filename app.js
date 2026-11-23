@@ -1,7 +1,7 @@
 // State
 const EMBEDDED_SCHEDULE = {
   "metadata": {
-    "generatedAt": "2026-11-23T13:50:02.946Z",
+    "generatedAt": "2026-11-23T16:59:11.034Z",
     "city": "Çanakkale",
     "activeTariffDate": "23 Kasım 2026",
     "weekendTariffDate": "28 Kasım 2026",
@@ -44,9 +44,25 @@ const EMBEDDED_SCHEDULE = {
             "12:50",
             "13:20",
             "13:35",
-            "14:00"
+            "14:00",
+            "14:10",
+            "14:30",
+            "14:50",
+            "15:10",
+            "15:30",
+            "16:00",
+            "16:30"
           ],
-          "weekend": []
+          "weekend": [],
+          "timeBadges": {
+            "16:00": "Ç-14",
+            "16:30": "Ç-14",
+            "14:30": "Ç-14",
+            "15:10": "Ç-14",
+            "15:30": "Ç-14",
+            "14:10": "Ç-14",
+            "14:50": "Ç-14"
+          }
         },
         {
           "id": "ardes_to_nusrat",
@@ -479,6 +495,28 @@ function initAutoDayDetection() {
   }
 }
 
+function formatTariffText(dateStr, fallbackText) {
+  const str = (dateStr || fallbackText || '').trim();
+  if (!str) return 'Güncel Tarife';
+  const match = str.match(/^(\d+\s+[^\d\s]+)/);
+  const clean = match ? match[1] : str;
+  return `✓ ${clean} Tarifesi`;
+}
+
+function updateTariffBadge() {
+  const badgeEl = document.getElementById('tariff-badge');
+  const subtextEl = document.getElementById('tariff-subtext');
+  if (!badgeEl || !subtextEl) return;
+
+  if (currentDayMode === 'weekday') {
+    badgeEl.textContent = formatTariffText(scheduleData?.metadata?.activeTariffDate, "23 Kasım");
+    subtextEl.textContent = "Hafta İçi Yürürlük";
+  } else {
+    badgeEl.textContent = formatTariffText(scheduleData?.metadata?.weekendTariffDate, "28 Kasım");
+    subtextEl.textContent = "Hafta Sonu Yürürlük";
+  }
+}
+
 function setDayMode(mode) {
   currentDayMode = mode;
   
@@ -502,18 +540,8 @@ function setDayMode(mode) {
     btnWeekday.className = "flex-1 py-2 text-xs font-semibold rounded-xl transition-all duration-200 text-center flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200";
   }
 
-  // Update header tariff badge
-  const badgeEl = document.getElementById('tariff-badge');
-  const subtextEl = document.getElementById('tariff-subtext');
-  if (badgeEl && subtextEl) {
-    if (mode === 'weekday') {
-      badgeEl.textContent = "✓ 23 Kasım Tarifesi";
-      subtextEl.textContent = "Hafta İçi Yürürlük";
-    } else {
-      badgeEl.textContent = "✓ 14 Kasım Tarifesi";
-      subtextEl.textContent = "Hafta Sonu Yürürlük";
-    }
-  }
+  // Update header tariff badge dynamically
+  updateTariffBadge();
 
   activeDirectionIndex = 0;
   renderApp();
@@ -551,6 +579,7 @@ function selectDirection(index) {
 function renderApp() {
   if (!scheduleData) return;
 
+  updateTariffBadge();
   renderLinePills();
   renderDirectionTabs();
   renderAllTimesGrid();
@@ -652,8 +681,17 @@ function getActiveTimesList() {
   return (currentDayMode === 'weekday') ? (dir.weekday || []) : (dir.weekend || []);
 }
 
+function getActiveTimeBadges() {
+  const line = scheduleData?.lines[activeLineId];
+  if (!line) return {};
+  const dir = line.directions[activeDirectionIndex];
+  if (!dir) return {};
+  return (currentDayMode === 'weekday') ? (dir.timeBadges || {}) : (dir.weekendBadges || {});
+}
+
 function renderAllTimesGrid() {
   const times = getActiveTimesList();
+  const timeBadges = getActiveTimeBadges();
   const grid = document.getElementById('all-times-grid');
   grid.innerHTML = '';
 
@@ -675,9 +713,10 @@ function renderAllTimesGrid() {
     const timeMinutes = h * 60 + m;
     const isPast = viewingToday && (timeMinutes < currentMinutes);
     const isNow = viewingToday && (timeMinutes === currentMinutes);
+    const badgeText = timeBadges[t];
 
     const div = document.createElement('div');
-    let cls = "py-1.5 px-2 rounded-xl text-center font-mono text-xs font-medium border ";
+    let cls = "py-1.5 px-2 rounded-xl text-center font-mono text-xs font-medium border relative flex flex-col items-center justify-center min-h-[44px] ";
     if (isNow) {
       cls += "bg-emerald-500 text-slate-950 font-bold border-emerald-400 animate-pulse";
     } else if (isPast) {
@@ -686,7 +725,12 @@ function renderAllTimesGrid() {
       cls += "bg-slate-800/80 text-slate-200 border-slate-700/60 hover:border-emerald-500/50";
     }
     div.className = cls;
-    div.textContent = t;
+
+    if (badgeText) {
+      div.innerHTML = `<span>${t}</span><span class="inline-block text-[8px] font-sans font-extrabold px-1 py-0.2 rounded ${isNow ? 'bg-slate-950 text-amber-300' : 'bg-amber-400 text-slate-950'} shadow-sm leading-tight mt-0.5">${badgeText}</span>`;
+    } else {
+      div.textContent = t;
+    }
     grid.appendChild(div);
 
     // İlk gelecek seferi (veya tam şu an olan seferi) işaretle
@@ -735,6 +779,11 @@ function updateLiveTimes() {
   }
 
   const times = getActiveTimesList();
+  const timeBadges = getActiveTimeBadges();
+  const prevBadgeEl = document.getElementById('prev-time-badge');
+  const currentBadgeEl = document.getElementById('current-time-badge');
+  const nextBadgeEl = document.getElementById('next-time-badge');
+
   if (times.length === 0) {
     document.getElementById('prev-time').textContent = '--:--';
     document.getElementById('prev-diff').textContent = 'Sefer yok';
@@ -743,6 +792,9 @@ function updateLiveTimes() {
     document.getElementById('next-time').textContent = '--:--';
     document.getElementById('next-diff').textContent = '--';
     document.getElementById('now-departing-badge').classList.add('hidden');
+    if (prevBadgeEl) prevBadgeEl.classList.add('hidden');
+    if (currentBadgeEl) currentBadgeEl.classList.add('hidden');
+    if (nextBadgeEl) nextBadgeEl.classList.add('hidden');
     return;
   }
 
@@ -790,6 +842,23 @@ function updateLiveTimes() {
     document.getElementById('next-time').textContent = parsed[0].raw;
     document.getElementById('next-diff').textContent = 'Yarın ilk sefer';
     document.getElementById('now-departing-badge').classList.add('hidden');
+    if (prevBadgeEl) {
+      if (timeBadges[prev.raw]) {
+        prevBadgeEl.textContent = timeBadges[prev.raw];
+        prevBadgeEl.classList.remove('hidden');
+      } else {
+        prevBadgeEl.classList.add('hidden');
+      }
+    }
+    if (currentBadgeEl) currentBadgeEl.classList.add('hidden');
+    if (nextBadgeEl) {
+      if (timeBadges[parsed[0].raw]) {
+        nextBadgeEl.textContent = timeBadges[parsed[0].raw];
+        nextBadgeEl.classList.remove('hidden');
+      } else {
+        nextBadgeEl.classList.add('hidden');
+      }
+    }
     return;
   }
 
@@ -798,9 +867,18 @@ function updateLiveTimes() {
     document.getElementById('prev-time').textContent = prev.raw;
     const diffMins = currentTotalMins - prev.mins;
     document.getElementById('prev-diff').textContent = `${diffMins} dk önce kalktı`;
+    if (prevBadgeEl) {
+      if (timeBadges[prev.raw]) {
+        prevBadgeEl.textContent = timeBadges[prev.raw];
+        prevBadgeEl.classList.remove('hidden');
+      } else {
+        prevBadgeEl.classList.add('hidden');
+      }
+    }
   } else {
     document.getElementById('prev-time').textContent = '--:--';
     document.getElementById('prev-diff').textContent = 'Günün ilk seferi bekleniyor';
+    if (prevBadgeEl) prevBadgeEl.classList.add('hidden');
   }
 
   // SIRADAKİ SEFER
@@ -810,6 +888,15 @@ function updateLiveTimes() {
 
   const badgeNow = document.getElementById('now-departing-badge');
   const countdownEl = document.getElementById('current-countdown');
+
+  if (currentBadgeEl) {
+    if (timeBadges[current.raw]) {
+      currentBadgeEl.textContent = timeBadges[current.raw];
+      currentBadgeEl.classList.remove('hidden');
+    } else {
+      currentBadgeEl.classList.add('hidden');
+    }
+  }
 
   if (current.mins === currentTotalMins) {
     // Tam kalkış anı!
@@ -831,9 +918,18 @@ function updateLiveTimes() {
     document.getElementById('next-time').textContent = next.raw;
     const nextDiffMins = next.mins - currentTotalMins;
     document.getElementById('next-diff').textContent = `${nextDiffMins} dk sonra`;
+    if (nextBadgeEl) {
+      if (timeBadges[next.raw]) {
+        nextBadgeEl.textContent = timeBadges[next.raw];
+        nextBadgeEl.classList.remove('hidden');
+      } else {
+        nextBadgeEl.classList.add('hidden');
+      }
+    }
   } else {
     document.getElementById('next-time').textContent = '--:--';
     document.getElementById('next-diff').textContent = 'Son sefer';
+    if (nextBadgeEl) nextBadgeEl.classList.add('hidden');
   }
 }
 
@@ -857,7 +953,9 @@ function openPdfModal() {
 
   iframe.src = localPdf;
   downloadLink.href = pdfUrl;
-  title.textContent = (currentDayMode === 'weekday') ? 'Hafta İçi Resmi Tarifesi (23 Kasım)' : 'Hafta Sonu Resmi Tarifesi (14 Kasım)';
+  const wDate = formatTariffText(scheduleData?.metadata?.activeTariffDate, "23 Kasım").replace('✓ ', '');
+  const weDate = formatTariffText(scheduleData?.metadata?.weekendTariffDate, "28 Kasım").replace('✓ ', '');
+  title.textContent = (currentDayMode === 'weekday') ? `Hafta İçi Resmi Tarifesi (${wDate})` : `Hafta Sonu Resmi Tarifesi (${weDate})`;
 
   modal.classList.remove('hidden');
 }

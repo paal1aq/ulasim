@@ -86,7 +86,20 @@ async function main() {
   // 3) Alt tablo (splitY altı): Sol sütun = Ardes Kalkış (10:45 - 16:45)
   const c10_ardes = filterTimesInXRange(p11Items, 115, 145, -Infinity, splitY - 1);
 
-  const c10_nusrat = sortBusTimes([...c10_nusrat_top, ...c10_nusrat_bottom]);
+  // 4) Alt tablo (splitY altı): Sağ sütunda 14:00'dan sonra "Ç14 OLARAK DEVAM EDECEKTİR" seferleri (14:10 - 16:30)
+  const c10_time_badges = {};
+  const c10_c14_times = [];
+  p11Items.forEach(it => {
+    if (it.y < splitY && it.x >= 315 && it.x <= 365 && it.str.includes('Ç14')) {
+      const match = it.str.match(/(\d{2}:\d{2})/);
+      if (match) {
+        c10_c14_times.push(match[1]);
+        c10_time_badges[match[1]] = 'Ç-14';
+      }
+    }
+  });
+
+  const c10_nusrat = sortBusTimes([...c10_nusrat_top, ...c10_nusrat_bottom, ...c10_c14_times]);
 
   // --- Ç8 HAFTA İÇİ (Page 9) ---
   const p9Items = await getPageItems(docWeekday, 9);
@@ -131,7 +144,8 @@ async function main() {
             title: "Nusrat Yurdu'ndan Kalkış",
             subTitle: "Mühendislik / Terzioğlu Kampüs Yönü",
             weekday: c10_nusrat,
-            weekend: []
+            weekend: [],
+            timeBadges: c10_time_badges
           },
           {
             id: "ardes_to_nusrat",

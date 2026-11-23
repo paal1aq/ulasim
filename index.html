@@ -176,7 +176,10 @@
           <div class="flex items-center space-x-2">
             <span class="text-slate-500 text-xs font-mono">⏪</span>
             <div>
-              <p class="text-[11px] font-medium text-slate-500">Önceki Sefer</p>
+              <div class="flex items-center gap-1.5">
+                <p class="text-[11px] font-medium text-slate-500">Önceki Sefer</p>
+                <span id="prev-time-badge" class="hidden text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 shadow-sm leading-tight">Ç-14</span>
+              </div>
               <p id="prev-time" class="text-sm font-semibold font-mono text-slate-400">--:--</p>
             </div>
           </div>
@@ -194,6 +197,9 @@
                 <span id="now-departing-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-slate-950 animate-bounce">
                   ŞİMDİ KALKIYOR! 🚍
                 </span>
+                <span id="current-time-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-slate-950 shadow-sm">
+                  Ç-14
+                </span>
               </div>
               <h2 id="current-time" class="text-4xl font-black font-mono text-white tracking-tight mt-1">--:--</h2>
             </div>
@@ -209,7 +215,10 @@
           <div class="flex items-center space-x-2">
             <span class="text-slate-400 text-xs font-mono">⏩</span>
             <div>
-              <p class="text-[11px] font-medium text-slate-400">Sonraki Sefer</p>
+              <div class="flex items-center gap-1.5">
+                <p class="text-[11px] font-medium text-slate-400">Sonraki Sefer</p>
+                <span id="next-time-badge" class="hidden text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 shadow-sm leading-tight">Ç-14</span>
+              </div>
               <p id="next-time" class="text-sm font-semibold font-mono text-slate-200">--:--</p>
             </div>
           </div>
