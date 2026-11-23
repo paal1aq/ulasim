@@ -4,9 +4,17 @@ const { execSync } = require('child_process');
 
 const TARGET_URL = 'https://ulasim.canakkale.bel.tr/rehber/hatlar-otobus-saatleri/';
 
+const MONTHS_MAP = {
+  'ocak': 1, 'şubat': 2, 'mart': 3, 'nisan': 4, 'mayıs': 5, 'haziran': 6,
+  'temmuz': 7, 'ağustos': 8, 'eylül': 9, 'ekim': 10, 'kasım': 11, 'aralık': 12
+};
+
 function fetchHtml(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return resolve(fetchHtml(res.headers.location));
+      }
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => resolve(data));
@@ -16,14 +24,53 @@ function fetchHtml(url) {
 
 function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(dest);
-    https.get(url, (res) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return resolve(downloadFile(res.headers.location, dest));
+      }
+      const file = fs.createWriteStream(dest);
       res.pipe(file);
       file.on('finish', () => file.close(resolve));
     }).on('error', (err) => {
       fs.unlink(dest, () => reject(err));
     });
   });
+}
+
+function extractDateScore(trText) {
+  const match = trText.match(/(\d{1,2})\s*(ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)/);
+  if (!match) return 0;
+  const day = parseInt(match[1], 10);
+  const month = MONTHS_MAP[match[2]] || 0;
+  return month * 100 + day;
+}
+
+function selectBestPdfLink(links, keyword) {
+  const candidates = links
+    .map((link, index) => {
+      const trText = link.text.toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim();
+      return { ...link, trText, index };
+    })
+    .filter(item => item.trText.includes(keyword));
+
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  // Birden fazla link varsa: "itibariyle" içeren ve en güncel tarihli olanı öne al
+  candidates.sort((a, b) => {
+    const aItibariyle = a.trText.includes('itibariyle') ? 1 : 0;
+    const bItibariyle = b.trText.includes('itibariyle') ? 1 : 0;
+    if (bItibariyle !== aItibariyle) return bItibariyle - aItibariyle;
+
+    const aDate = extractDateScore(a.trText);
+    const bDate = extractDateScore(b.trText);
+    if (bDate !== aDate) return bDate - aDate;
+
+    // Eşitlik durumunda sayfada daha sonra (altta) eklenen linki seç
+    return b.index - a.index;
+  });
+
+  return candidates[0];
 }
 
 async function check() {
@@ -38,11 +85,14 @@ async function check() {
       links.push({ url: match[1], text });
     }
 
-    const weekdayLink = links.find(l => l.text.toLowerCase().includes('hafta içi'))?.url;
-    const weekendLink = links.find(l => l.text.toLowerCase().includes('hafta sonu'))?.url;
+    const bestWeekday = selectBestPdfLink(links, 'hafta içi');
+    const bestWeekend = selectBestPdfLink(links, 'hafta sonu');
 
-    console.log("Bulunan Hafta İçi Linki:", weekdayLink);
-    console.log("Bulunan Hafta Sonu Linki:", weekendLink);
+    const weekdayLink = bestWeekday?.url;
+    const weekendLink = bestWeekend?.url;
+
+    console.log("Seçilen Hafta İçi Linki:", bestWeekday?.text, "->", weekdayLink);
+    console.log("Seçilen Hafta Sonu Linki:", bestWeekend?.text, "->", weekendLink);
 
     let schedule = {};
     if (fs.existsSync('schedule.json')) {
@@ -77,7 +127,6 @@ async function check() {
         }
       });
 
-      // Embed into app.js
       const updatedSchedule = fs.readFileSync('schedule.json', 'utf8');
       let appJs = fs.readFileSync('app.js', 'utf8');
       appJs = appJs.replace(
