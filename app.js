@@ -1,10 +1,10 @@
 // State
 const EMBEDDED_SCHEDULE = {
   "metadata": {
-    "generatedAt": "2026-11-23T10:23:57.713Z",
+    "generatedAt": "2026-11-23T13:50:02.946Z",
     "city": "Çanakkale",
     "activeTariffDate": "23 Kasım 2026",
-    "weekendTariffDate": "14 Kasım 2026",
+    "weekendTariffDate": "28 Kasım 2026",
     "officialSourceUrl": "https://ulasim.canakkale.bel.tr/rehber/hatlar-otobus-saatleri/",
     "pdfWeekdayUrl": "https://ulasim.canakkale.bel.tr/wp-content/uploads/2018/02/23-KASIM-2.pdf",
     "pdfWeekendUrl": "https://ulasim.canakkale.bel.tr/wp-content/uploads/2018/02/14-KASIM-8.pdf"
@@ -37,6 +37,22 @@ const EMBEDDED_SCHEDULE = {
             "10:00",
             "10:15",
             "10:30",
+            "11:00",
+            "11:25",
+            "11:50",
+            "12:20",
+            "12:50",
+            "13:20",
+            "13:35",
+            "14:00"
+          ],
+          "weekend": []
+        },
+        {
+          "id": "ardes_to_nusrat",
+          "title": "Kampüs / Ardes'ten Kalkış",
+          "subTitle": "Nusrat Yurdu Yönü",
+          "weekday": [
             "10:45",
             "11:10",
             "11:35",
@@ -54,22 +70,6 @@ const EMBEDDED_SCHEDULE = {
             "15:50",
             "16:15",
             "16:45"
-          ],
-          "weekend": []
-        },
-        {
-          "id": "ardes_to_nusrat",
-          "title": "Kampüs / Ardes'ten Kalkış",
-          "subTitle": "Nusrat Yurdu Yönü",
-          "weekday": [
-            "11:00",
-            "11:25",
-            "11:50",
-            "12:20",
-            "12:50",
-            "13:20",
-            "13:35",
-            "14:00"
           ],
           "weekend": []
         }

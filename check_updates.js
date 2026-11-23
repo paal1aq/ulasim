@@ -68,7 +68,14 @@ async function check() {
 
     if (hasChange) {
       console.log("🔄 Yeni PDF'ler işleniyor (build_schedule.js çalıştırılıyor)...");
-      execSync('node build_schedule.js', { stdio: 'inherit' });
+      execSync('node build_schedule.js', {
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          NEW_WEEKDAY_URL: weekdayLink || '',
+          NEW_WEEKEND_URL: weekendLink || ''
+        }
+      });
 
       // Embed into app.js
       const updatedSchedule = fs.readFileSync('schedule.json', 'utf8');
