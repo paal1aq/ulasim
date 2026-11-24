@@ -157,6 +157,29 @@
       box-shadow: 0 0 14px var(--accent-glow);
     }
 
+    /* Hafta İçi / Hafta Sonu Day Mode Selector - Neutral Translucent Style */
+    #btn-mode-weekday,
+    #btn-mode-weekend,
+    .day-btn,
+    .tab-btn {
+      transition: all 0.2s ease !important;
+      border: 1px solid transparent;
+    }
+
+    #btn-mode-weekday.bg-emerald-600,
+    #btn-mode-weekend.bg-emerald-600,
+    #btn-mode-weekday.active,
+    #btn-mode-weekend.active,
+    .day-btn.active,
+    .tab-btn.active {
+      background-color: rgba(255, 255, 255, 0.14) !important;
+      background-image: none !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+      border: 1px solid rgba(255, 255, 255, 0.28) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+    }
+
     /* Left-side sleek visible scrollbar matching active line theme */
     .scroll-left-container {
       direction: rtl; /* Puts scrollbar on the LEFT side */
