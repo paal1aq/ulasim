@@ -32,16 +32,56 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function timeoutPromise(ms) {
+  return new Promise((_, reject) => setTimeout(() => reject(new Error('Network timeout')), ms));
+}
+
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200) return response;
-        const toCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, toCache));
-        return response;
-      }).catch(() => cached);
-    })
-  );
+  // Sadece GET isteklerini işle
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  const isNetworkFirst = event.request.mode === 'navigate' ||
+    url.pathname.endsWith('/') ||
+    url.pathname.endsWith('index.html') ||
+    url.pathname.endsWith('app.js') ||
+    url.pathname.endsWith('schedule.json');
+
+  if (isNetworkFirst) {
+    // Network-First: 2.5 saniye timeout ile önce ağdan dene, yanıt gelirse cache'i güncelle
+    event.respondWith(
+      Promise.race([
+        fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return networkResponse;
+        }),
+        timeoutPromise(2500)
+      ]).catch(() => {
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
+          return Promise.reject('no-cache');
+        });
+      })
+    );
+  } else {
+    // Diğer statik varlıklar: Cache-First
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return networkResponse;
+        });
+      })
+    );
+  }
 });

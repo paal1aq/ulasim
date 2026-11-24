@@ -471,6 +471,11 @@ async function loadSchedule() {
     const res = await fetch('schedule.json');
     if (res.ok) {
       scheduleData = await res.json();
+      if (typeof window !== 'undefined' && window.navigator && window.navigator.onLine) {
+        try {
+          localStorage.setItem('lastSyncedAt', new Date().toISOString());
+        } catch (err) {}
+      }
     } else {
       throw new Error('fetch failed');
     }
@@ -494,6 +499,31 @@ function initAutoDayDetection() {
   }
 }
 
+const TR_MONTH_NAMES = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+function getLatestCheckTime(now) {
+  const checks = [[5, 30], [11, 30], [17, 30], [22, 30]];
+  let latest = null;
+  for (const [h, m] of checks) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+    if (d <= now) {
+      latest = d;
+    }
+  }
+  if (!latest) {
+    latest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 22, 30, 0, 0);
+  }
+  return latest;
+}
+
+function isTariffDateToday(tariffDateStr, now) {
+  if (!tariffDateStr) return false;
+  const day = now.getDate();
+  const monthName = TR_MONTH_NAMES[now.getMonth()];
+  const regex = new RegExp(`\\b0?${day}\\s+${monthName}\\b`, 'i');
+  return regex.test(tariffDateStr);
+}
+
 function formatTariffText(dateStr, fallbackText) {
   const str = (dateStr || fallbackText || '').trim();
   if (!str) return 'Güncel Tarife';
@@ -507,12 +537,60 @@ function updateTariffBadge() {
   const subtextEl = document.getElementById('tariff-subtext');
   if (!badgeEl || !subtextEl) return;
 
-  if (currentDayMode === 'weekday') {
-    badgeEl.textContent = formatTariffText(scheduleData?.metadata?.activeTariffDate, "23 Kasım");
-    subtextEl.textContent = "Hafta İçi Yürürlük";
+  const rawTariffDate = (currentDayMode === 'weekday')
+    ? scheduleData?.metadata?.activeTariffDate
+    : scheduleData?.metadata?.weekendTariffDate;
+  const fallback = (currentDayMode === 'weekday') ? "23 Kasım" : "28 Kasım";
+
+  badgeEl.textContent = formatTariffText(rawTariffDate, fallback);
+
+  const isOnline = (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean')
+    ? navigator.onLine
+    : true;
+
+  if (isOnline) {
+    badgeEl.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800/60";
+    subtextEl.className = "text-[10px] text-slate-400 mt-0.5";
+    subtextEl.textContent = (currentDayMode === 'weekday') ? "Hafta İçi Yürürlük" : "Hafta Sonu Yürürlük";
   } else {
-    badgeEl.textContent = formatTariffText(scheduleData?.metadata?.weekendTariffDate, "28 Kasım");
-    subtextEl.textContent = "Hafta Sonu Yürürlük";
+    // Offline tazelik kontrolü
+    const now = new Date();
+    const isToday = isTariffDateToday(rawTariffDate, now);
+
+    if (isToday) {
+      badgeEl.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800/60";
+      subtextEl.className = "text-[10px] text-slate-400 mt-0.5";
+      subtextEl.textContent = "Çevrimdışı · Bugünün tarifesi yüklü";
+    } else {
+      let lastSyncedStr = null;
+      try {
+        lastSyncedStr = localStorage.getItem('lastSyncedAt');
+      } catch (err) {}
+
+      const syncDate = lastSyncedStr ? new Date(lastSyncedStr) : null;
+      const latestCheck = getLatestCheckTime(now);
+
+      if (syncDate && !isNaN(syncDate.getTime()) && syncDate >= latestCheck) {
+        const hh = String(syncDate.getHours()).padStart(2, '0');
+        const mm = String(syncDate.getMinutes()).padStart(2, '0');
+        badgeEl.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800/60";
+        subtextEl.className = "text-[10px] text-slate-400 mt-0.5";
+        subtextEl.textContent = `Çevrimdışı · Tarife güncel (${hh}:${mm}'de doğrulandı)`;
+      } else {
+        // Uyarı - Kehribar (amber) rengi
+        badgeEl.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-950/80 text-amber-300 border border-amber-600/60";
+        subtextEl.className = "text-[10px] text-amber-400/90 mt-0.5 font-medium";
+        if (syncDate && !isNaN(syncDate.getTime())) {
+          const day = syncDate.getDate();
+          const monthName = TR_MONTH_NAMES[syncDate.getMonth()];
+          const hh = String(syncDate.getHours()).padStart(2, '0');
+          const mm = String(syncDate.getMinutes()).padStart(2, '0');
+          subtextEl.textContent = `Çevrimdışı · Son kontrol: ${day} ${monthName} ${hh}:${mm} (Güncellenmiş olabilir)`;
+        } else {
+          subtextEl.textContent = "Çevrimdışı · Son kontrol: Bilinmiyor (Güncellenmiş olabilir)";
+        }
+      }
+    }
   }
 }
 
@@ -933,7 +1011,15 @@ function updateLiveTimes() {
 }
 
 function setupEventListeners() {
-  // Key bindings or swipe gestures if needed
+  window.addEventListener('online', async () => {
+    await loadSchedule();
+    updateTariffBadge();
+    renderApp();
+    updateLiveTimes();
+  });
+  window.addEventListener('offline', () => {
+    updateTariffBadge();
+  });
 }
 
 // PDF Modal Controls

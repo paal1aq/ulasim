@@ -135,6 +135,15 @@ async function check() {
       );
       fs.writeFileSync('app.js', appJs, 'utf8');
       console.log("✅ Saatler başarıyla güncellendi ve app.js içine işlendi!");
+
+      // Service Worker cache sürümünü güncelle
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const newCacheName = `ulasim-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+      let swCode = fs.readFileSync('sw.js', 'utf8');
+      swCode = swCode.replace(/const CACHE_NAME = ['"][^'"]+['"];/, `const CACHE_NAME = '${newCacheName}';`);
+      fs.writeFileSync('sw.js', swCode, 'utf8');
+      console.log(`✅ Service Worker cache versiyonu güncellendi: ${newCacheName}`);
     } else {
       console.log("✅ Saatlerde herhangi bir değişiklik yok. Mevcut tarife geçerli.");
     }
