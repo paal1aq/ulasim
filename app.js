@@ -454,10 +454,28 @@ let currentDayMode = 'weekday'; // 'weekday' or 'weekend'
 let activeLineId = 'c10';
 let activeDirectionIndex = 0;
 
+const LINE_THEME_COLORS = {
+  c10: '#a855f7',
+  c8: '#06b6d4',
+  c960: '#ef4444'
+};
+
+function applyLineTheme(lineId) {
+  const line = lineId || 'c10';
+  if (typeof document !== 'undefined' && document.body) {
+    document.body.dataset.line = line;
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme && LINE_THEME_COLORS[line]) {
+      metaTheme.setAttribute('content', LINE_THEME_COLORS[line]);
+    }
+  }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSchedule();
   initAutoDayDetection();
+  applyLineTheme(activeLineId);
   setupEventListeners();
   renderApp();
   
@@ -605,6 +623,8 @@ function setDayMode(mode) {
     activeLineId = 'c10';
   }
   
+  applyLineTheme(activeLineId);
+
   // Update toggle button styles
   const btnWeekday = document.getElementById('btn-mode-weekday');
   const btnWeekend = document.getElementById('btn-mode-weekend');
@@ -626,6 +646,12 @@ function setDayMode(mode) {
 }
 
 function selectLine(lineId) {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try {
+      navigator.vibrate(10);
+    } catch (e) {}
+  }
+
   if (!scheduleData || !scheduleData.lines[lineId]) return;
   const line = scheduleData.lines[lineId];
 
@@ -634,6 +660,7 @@ function selectLine(lineId) {
   }
 
   activeLineId = lineId;
+  applyLineTheme(lineId);
   activeDirectionIndex = 0;
   renderApp();
   updateLiveTimes();
@@ -692,9 +719,9 @@ function renderLinePills() {
     const btn = document.createElement('button');
     btn.onclick = () => selectLine(line.id);
 
-    let baseClass = "p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 border text-center relative ";
+    let baseClass = "line-pill-btn p-2.5 rounded-2xl flex flex-col items-center justify-center border text-center relative ";
     if (isSelected) {
-      baseClass += "bg-emerald-600/20 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-950/40";
+      baseClass += "is-active";
     } else {
       baseClass += "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700 active:scale-95";
     }
@@ -702,10 +729,10 @@ function renderLinePills() {
     btn.className = baseClass;
 
     btn.innerHTML = `
-      <div class="flex items-center text-xs font-bold font-mono">
+      <div class="line-pill-code flex items-center text-xs font-bold font-mono">
         ${line.code}
       </div>
-      <div class="text-[10px] text-slate-400 truncate max-w-full mt-0.5">
+      <div class="line-pill-name text-[10px] text-slate-400 truncate max-w-full mt-0.5">
         ${line.name.split('-')[1]?.trim() || line.name}
       </div>
     `;
@@ -730,11 +757,11 @@ function renderDirectionTabs() {
     const btn = document.createElement('button');
     btn.onclick = () => selectDirection(idx);
 
-    let cls = "py-2 px-3 rounded-lg text-xs font-semibold transition-all duration-150 flex flex-col items-center justify-center ";
+    let cls = "direction-tab-btn py-2 px-3 rounded-lg text-xs font-semibold flex flex-col items-center justify-center ";
     if (isSelected) {
-      cls += "bg-slate-800 text-emerald-400 border border-emerald-500/30 shadow-sm";
+      cls += "is-active";
     } else {
-      cls += "text-slate-400 hover:text-slate-200";
+      cls += "text-slate-400 hover:text-slate-200 border border-transparent";
     }
     btn.className = cls;
 
@@ -793,13 +820,13 @@ function renderAllTimesGrid() {
     const badgeText = timeBadges[t];
 
     const div = document.createElement('div');
-    let cls = "py-1.5 px-2 rounded-xl text-center font-mono text-xs font-medium border relative flex flex-col items-center justify-center min-h-[44px] ";
+    let cls = "py-1.5 px-2 rounded-xl text-center font-mono text-xs font-medium border relative flex flex-col items-center justify-center min-h-[44px] transition-colors ";
     if (isNow) {
-      cls += "bg-emerald-500 text-slate-950 font-bold border-emerald-400 animate-pulse";
+      cls += "time-pill-now animate-pulse";
     } else if (isPast) {
       cls += "bg-slate-950/40 text-slate-600 border-slate-900";
     } else {
-      cls += "bg-slate-800/80 text-slate-200 border-slate-700/60 hover:border-emerald-500/50";
+      cls += "bg-slate-800/80 text-slate-200 border-slate-700/60 hover:border-slate-500";
     }
     div.className = cls;
 
@@ -979,7 +1006,7 @@ function updateLiveTimes() {
     // Tam kalkış anı!
     badgeNow.classList.remove('hidden');
     countdownEl.textContent = 'ŞİMDİ';
-    countdownEl.className = "text-xl font-black font-mono text-emerald-400 animate-pulse";
+    countdownEl.className = "text-xl font-black font-mono theme-countdown-text animate-pulse";
   } else {
     badgeNow.classList.add('hidden');
     if (diffMins <= 0) {
@@ -987,7 +1014,7 @@ function updateLiveTimes() {
     } else {
       countdownEl.textContent = `${diffMins} dk kaldı`;
     }
-    countdownEl.className = "text-xl font-bold font-mono text-emerald-400";
+    countdownEl.className = "text-xl font-bold font-mono theme-countdown-text";
   }
 
   // Sonraki Sefer
