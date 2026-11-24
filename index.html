@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Çanakkale Ulaşım - Otobüs Saatleri & Canlı Takip</title>
-  <meta name="theme-color" content="#a855f7">
+  <meta name="theme-color" content="#c084fc">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
@@ -15,7 +15,7 @@
   <!-- Inter Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -25,6 +25,7 @@
         extend: {
           fontFamily: {
             sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
           },
           colors: {
             brand: {
@@ -44,10 +45,10 @@
   <style>
     /* Theme Variables for Active Line */
     :root, body[data-line="c10"] {
-      --accent: #a855f7;
-      --accent-soft: rgba(168, 85, 247, 0.15);
-      --accent-border: rgba(168, 85, 247, 0.4);
-      --accent-glow: rgba(168, 85, 247, 0.25);
+      --accent: #c084fc;
+      --accent-soft: rgba(192, 132, 252, 0.15);
+      --accent-border: rgba(192, 132, 252, 0.4);
+      --accent-glow: rgba(192, 132, 252, 0.25);
     }
     body[data-line="c8"] {
       --accent: #06b6d4;
@@ -62,20 +63,36 @@
       --accent-glow: rgba(239, 68, 68, 0.25);
     }
 
+    /* Universal Inter Font Enforcement */
+    body, button, input, select, textarea, .countdown, .time-item, [class*="time"], [class*="count"], .font-mono {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    }
+
     /* Prevent pull-to-refresh on mobile if not desired */
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
 
-    /* Tabular numbers for aligned timestamps and countdowns */
-    .font-mono, #current-time, #current-countdown, #live-clock, #all-times-grid, #all-times-grid > div {
+    /* Tabular numbers and stylistic alternates for crisp, modern numerals */
+    body, button, input, select, .font-mono, #current-time, #current-countdown, #live-clock, #all-times-grid, #all-times-grid > div, .countdown, .time-item, [class*="time"], [class*="count"] {
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
       font-variant-numeric: tabular-nums;
+    }
+
+    /* Top Header Styled with Active Line Accent */
+    header {
+      background-color: rgba(15, 23, 42, 0.92);
+      background-image: linear-gradient(180deg, var(--accent-soft) 0%, transparent 100%);
+      border-bottom: 1px solid var(--accent-border) !important;
+      transition: background-color 0.25s ease, border-color 0.25s ease, background-image 0.25s ease;
     }
 
     /* Smooth transitions for theme changes */
     .theme-transition,
+    header,
+    #header-logo,
+    #header-pulse-dot,
     .line-pill-btn,
     .direction-tab-btn,
     .theme-current-card,
@@ -170,14 +187,14 @@
 <body data-line="c10" class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased pb-12">
 
   <!-- Top Status & Watchdog Bar -->
-  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-4 py-3">
+  <header class="backdrop-blur sticky top-0 z-40 px-4 py-3">
     <div class="max-w-md mx-auto flex items-center justify-between">
       <div class="flex items-center space-x-2.5">
-        <img src="icon-192.png" alt="Çanakkale Ulaşım" class="w-8 h-8 rounded-xl shadow-lg border border-emerald-500/30 object-cover">
+        <img src="icon-192.png" alt="Çanakkale Ulaşım" id="header-logo" class="w-8 h-8 rounded-xl shadow-lg object-cover" style="border: 1px solid var(--accent-border);">
         <div>
           <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
             Çanakkale Ulaşım
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="header-pulse-dot" class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--accent);"></span>
           </h1>
           <p id="live-clock" class="text-xs text-slate-400 font-mono">--:--:--</p>
         </div>
