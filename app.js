@@ -1,13 +1,13 @@
 // State
 const EMBEDDED_SCHEDULE = {
   "metadata": {
-    "generatedAt": "2026-11-24T12:04:38.696Z",
+    "generatedAt": "2026-11-25T22:58:05.848Z",
     "city": "Çanakkale",
     "activeTariffDate": "24 Kasım 2026",
     "weekendTariffDate": "28 Kasım 2026",
     "officialSourceUrl": "https://ulasim.canakkale.bel.tr/rehber/hatlar-otobus-saatleri/",
     "pdfWeekdayUrl": "https://ulasim.canakkale.bel.tr/wp-content/uploads/2018/02/24-KASIM-9.pdf",
-    "pdfWeekendUrl": "https://ulasim.canakkale.bel.tr/wp-content/uploads/2018/02/28-KASIM-3.pdf"
+    "pdfWeekendUrl": "https://ulasim.canakkale.bel.tr/wp-content/uploads/2018/02/28-KASIM-5.pdf"
   },
   "lines": {
     "c10": {

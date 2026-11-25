@@ -1,4 +1,4 @@
-const CACHE_NAME = 'canakkale-ulasim-v3';
+const CACHE_NAME = 'ulasim-20261125-2258';
 const ASSETS = [
   './',
   './index.html',
