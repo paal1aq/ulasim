@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ulasim-20261125-2258';
+const CACHE_NAME = 'ulasim-20261126-1031';
 const ASSETS = [
   './',
   './index.html',
